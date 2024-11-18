@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Bingo Game</title>
+    <style>
+        div {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        table {
+            border-collapse: collapse;
+        }
+
+        td {
+            border: 1px solid black;
+            width: 50px;
+            height: 50px;
+            text-align: center;
+            vertical-align: middle;
+            cursor: pointer;
+        }
+
+        .marked {
+            background-color: yellow;
+        }
+
+        .line {
+            position: absolute;
+            border: 2px solid red;
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>Bingo Game</h2>
+    <div>
+        <table id="bingo-table"></table>
+    </div>
+    <button onclick="generateBingoNumbers()">Generate Bingo Numbers</button>
+    <button onclick="generateRandomNumbers()">Generate Random Numbers</button>
+    <button onclick="checkBingo()">Check Bingo</button>
+
+    <script>
+        // JavaScript 部分
+        const boardSize = 5;
+        let bingoBoard = [];
+        let randomNumbers = [];
+        let markedCells = [];
+
+        function generateBingoNumbers() {
+            const numbers = Array.from({ length: 25 }, (_, i) => i + 1).sort(() => Math.random() - 0.5);
+            bingoBoard = Array(boardSize).fill(null).map(() => numbers.splice(0, boardSize));
+            bingoBoard = [[11, 18, 4, 10, 5], [25, 12, 15, 7, 26], [3, 9, 2, 19, 27], [23, 21, 17, 13, 8], [16, 6, 22, 20, 24]];
+            renderBoard();
+            // generateRandomNumbers()
+        }
+        let lastTd = ''
+        function renderBoard() {
+            const table = document.getElementById('bingo-table');
+            table.innerHTML = '';
+            let tbody = document.createElement('tbody');
+            for (let row = 0; row < boardSize; row++) {
+                let tr = document.createElement('tr');
+                for (let col = 0; col < boardSize; col++) {
+                    let td = document.createElement('td');
+                    td.innerText = bingoBoard[row][col];
+                    td.dataset.row = row;
+                    td.dataset.col = col;
+                    td.onclick = () => markCell(td);
+                    tr.appendChild(td);
+                    if (row == 4 && col == 4) {
+                        lastTd = td.innerText
+                    }
+                }
+                tbody.appendChild(tr);
+            }
+            table.appendChild(tbody);
+        }
+
+        function markCell(cell) {
+            const cellValue = parseInt(cell.innerText);
+            if (randomNumbers.includes(cellValue)) {
+                cell.classList.add('marked');
+                markedCells.push({ row: cell.dataset.row, col: cell.dataset.col });
+            } else {
+                cell.classList.remove('marked');
+            }
+        }
+
+        function generateRandomNumbers() {
+            randomNumbers = Array.from({ length: 15 }, () => Math.floor(Math.random() * 25) + 1);
+            // console.log(randomNumbers)
+            // alert(`Random Numbers: ${randomNumbers.join(', ')}`);
+            randomNumbers = [11, 18, 4, 10, 5, 12, 26, 27, 9, 23, 21, 17, 8, 13, 6];
+            checkBingo()
+        }
+
+        function checkBingo() {
+            markedCells = [];
+            const cells = document.querySelectorAll('td');
+            cells.forEach(cell => {
+                const cellValue = parseInt(cell.innerText);
+                if (randomNumbers.includes(cellValue)) {
+                    cell.classList.add('marked');
+                    markedCells.push({ row: cell.dataset.row, col: cell.dataset.col });
+                } else {
+                    cell.classList.remove('marked');
+                }
+            });
+
+            checkForLines();
+        }
+
+        function checkForLines() {
+            // console.log(lastTd)
+            //橫線賓果
+            let tr = document.querySelectorAll('tr')
+            let bingoRow = [];
+            for (let i = 0; i < tr.length; i++) {
+                if (tr[i].querySelectorAll("[class='marked']").length === 5) {
+                    bingoRow.push(tr[i].querySelectorAll("[class='marked']"))
+                }
+            }
+            let bingoRowText = [];
+            let arr = [];
+            for (let i = 0; i < bingoRow.length; i++) {
+                arr.length = 0;
+                for (let j = 0; j < bingoRow[i].length; j++) {
+                    arr.push(bingoRow[i][j].innerText)
+                }
+                bingoRowText.push([...arr])
+            }
+            // console.log(bingoRowText)
+
+            //直線賓果
+            const table = document.getElementById('bingo-table');
+            const rows = table.rows;
+            let colArr = [];
+            let orgArr = [];
+            function gogo() {
+                for (let i = 0; i < 25; i++) {
+                    for (let j = 0; j < rows.length; j++) {
+                        console.log(rows[j])
+                        console.log(j)
+                        let cols = rows[j].querySelectorAll('td');
+                        if(cols[i]) {
+                            if(cols[i].classList.contains('marked')) {
+                                console.log(cols[i].innerText)
+                                colArr.push(cols[i].innerText)
+                                if(j<=3) {
+                                    orgArr.push([...colArr]);
+                                    console.log(orgArr)
+                                }
+                            }
+                            
+                        }
+                        
+                    }
+
+                }
+                console.log(orgArr)
+            }
+            gogo()
+
+
+            return
+
+            const lines = {
+                rows: Array(boardSize).fill(0),
+                cols: Array(boardSize).fill(0),
+                diagonal1: 0,
+                diagonal2: 0
+            };
+
+            markedCells.forEach(({ row, col }) => {
+                row = parseInt(row);
+                col = parseInt(col);
+                lines.rows[row]++;
+                lines.cols[col]++;
+                if (row === col) lines.diagonal1++;
+                if (row + col === boardSize - 1) lines.diagonal2++;
+            });
+
+            let hasBingo = false;
+
+            // Check rows and columns for Bingo
+            lines.rows.forEach((count, index) => {
+                if (count === boardSize) {
+                    drawLine('row', index);
+                    hasBingo = true;
+                }
+            });
+
+            lines.cols.forEach((count, index) => {
+                if (count === boardSize) {
+                    drawLine('col', index);
+                    hasBingo = true;
+                }
+            });
+
+            // Check diagonals for Bingo
+            if (lines.diagonal1 === boardSize) {
+                drawLine('diagonal1');
+                hasBingo = true;
+            }
+            if (lines.diagonal2 === boardSize) {
+                drawLine('diagonal2');
+                hasBingo = true;
+            }
+
+            if (hasBingo) {
+                // alert('Bingo!');
+            }
+        }
+
+        function drawLine(type, index) {
+            const table = document.getElementById('bingo-table');
+            const line = document.createElement('div');
+            line.className = 'line';
+
+            if (type === 'row') {
+                line.style.width = '250px';
+                line.style.height = '2px';
+                line.style.top = `${index * 55 + 25}px`;
+                line.style.left = '0px';
+            } else if (type === 'col') {
+                line.style.width = '2px';
+                line.style.height = '250px';
+                line.style.left = `${index * 55 + 25}px`;
+                line.style.top = '0px';
+            } else if (type === 'diagonal1') {
+                line.style.width = '250px';
+                line.style.height = '2px';
+                line.style.transform = 'rotate(45deg)';
+                line.style.top = '0px';
+                line.style.left = '0px';
+            } else if (type === 'diagonal2') {
+                line.style.width = '250px';
+                line.style.height = '2px';
+                line.style.transform = 'rotate(-45deg)';
+                line.style.top = '0px';
+                line.style.left = '0px';
+            }
+
+            table.parentElement.appendChild(line);
+        }
+
+        setTimeout(() => {
+
+            generateBingoNumbers()
+        })
+    </script>
+
+</body>
+
+</html>
